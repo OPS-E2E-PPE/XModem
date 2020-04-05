@@ -6,7 +6,9 @@ namespace XModem_Project
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            XModem xModem = new XModem();
+
+            xModem.init_xmodem();
         }
     }
 }
