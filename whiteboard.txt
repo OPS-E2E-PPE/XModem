@@ -1,0 +1,10 @@
+콘솔에서 입력을 받는 메서드로는 Console.ReadLine();
+콘솔에서 출력을 하는 메서드로는 Console.WriteLine();
+                ""                         Console.Write();
+이 있습니다.
+
+여기서 Write와 WriteLine 메서드의 차이로는
+Console.WrteLine 메서드는 한 줄을 출력 후 개행("\n")을 해줍니다.
+하지만 Console.Write 메서드는 한 줄을 개행해 주지 않습니다.
+
+

@@ -1,0 +1,32 @@
+*Packet 구조
+   1            2            3            4            5
+  SOH(1)    PacketNo(1) 255-P.no(1)  DataBlock(128)  CRC(2)
+
+ 2 : packet 송신마다 1 부터 255 까지 증가 (255 되면 0 으로 roll over)
+ 3 : packet 송신마다 254 부터 0까지 감소  (0 되면 255 으로 roll over)
+  -> 2와 3의 합은 항상 0xff 이다.
+
+1 은  SOH, EOT, CAN, ETB 값만 가질 수 있다.
+
+*초기 XModem 은 crc 가 8bits
+
+*XModem-crc 는 crc 가 16bits
+ - 'C'가 시작 메시지 (초기 문자)
+ - C : 0x43
+
+*crc 는 4-131 에서만 계산
+
+*XModem-1k (1029bytes)
+ - data block size를 128byte에서 1024bytes 까지 증가 시킨다.
+
+/ protocol flow control ***********************************/
+SOH : start of header 0x01
+EOT : end of transfer 0x04
+ETB : end of Transmission Block 0x17
+
+ACK : acknowledge 0x06
+NAK : Not acknowledge 0x15
+
+CAN : cancle (force receiver to start sending 'C') 0x18
+/**********************************************************/
+
