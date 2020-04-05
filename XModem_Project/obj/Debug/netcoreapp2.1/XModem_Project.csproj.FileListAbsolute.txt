@@ -1,0 +1,11 @@
+D:\Git_local_rep\XModem\XModem_Project\bin\Debug\netcoreapp2.1\XModem_Project.deps.json
+D:\Git_local_rep\XModem\XModem_Project\bin\Debug\netcoreapp2.1\XModem_Project.runtimeconfig.json
+D:\Git_local_rep\XModem\XModem_Project\bin\Debug\netcoreapp2.1\XModem_Project.runtimeconfig.dev.json
+D:\Git_local_rep\XModem\XModem_Project\bin\Debug\netcoreapp2.1\XModem_Project.dll
+D:\Git_local_rep\XModem\XModem_Project\bin\Debug\netcoreapp2.1\XModem_Project.pdb
+D:\Git_local_rep\XModem\XModem_Project\obj\Debug\netcoreapp2.1\XModem_Project.csprojAssemblyReference.cache
+D:\Git_local_rep\XModem\XModem_Project\obj\Debug\netcoreapp2.1\XModem_Project.csproj.CoreCompileInputs.cache
+D:\Git_local_rep\XModem\XModem_Project\obj\Debug\netcoreapp2.1\XModem_Project.AssemblyInfoInputs.cache
+D:\Git_local_rep\XModem\XModem_Project\obj\Debug\netcoreapp2.1\XModem_Project.AssemblyInfo.cs
+D:\Git_local_rep\XModem\XModem_Project\obj\Debug\netcoreapp2.1\XModem_Project.dll
+D:\Git_local_rep\XModem\XModem_Project\obj\Debug\netcoreapp2.1\XModem_Project.pdb
