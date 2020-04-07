@@ -22,18 +22,27 @@ namespace XModem_Project
 
         byte[] Sender_Packet = new byte[133];
 
-        static byte Sender_Packet_Number = 0;
+        byte Sender_Packet_Number = 1;
         byte[] Sender_Data = new byte[128];
 
         public void init_xmodem()
         {
+			int ACK_NAK = 0;
             this.wait_c();
 
+			/*test*/
             for(int i = 0; i < 5; i++)
             {
-                Sender_Data[0]++;
-                Sender_Data[127]++;
-                Send_Packet(Sender_Data);
+                Send_Packet(Sender_Data, Sender_Packet_Number);
+				ACK_NAK = Wait_ACK_NAK();
+                if(ACK_NAK == 1)
+				{
+					Sender_Data[0]++;
+					Sender_Data[127]++;
+					Sender_Packet_Number++;
+				}
+				else if(ACK_NAK == 0)
+				{;}
             }
         }
 
@@ -57,18 +66,17 @@ namespace XModem_Project
         /*
          * make packet and send
          */
-        private void Send_Packet(byte[] data)
+        private void Send_Packet(byte[] data, byte SPN)
         {
             Sender_Packet[0] = Constants.SOH;
 
             /*255 넘으면 알아서 0 되겠지*/
-            Sender_Packet_Number++;
-            Sender_Packet[1] = Sender_Packet_Number;
+            Sender_Packet[1] = SPN;
 
             /*byte -> int 형변환 때문에 더하기 빼기도 어렵네...*/
-            Sender_Packet[2] = BitConverter.GetBytes(255 - Sender_Packet_Number)[0];
+            Sender_Packet[2] = BitConverter.GetBytes(255 - SPN)[0];
 
-            /*C 라면 [3]주소에다가 그냥 memcpy 하면 되는데... Buffer.BlockCopy 가 있네*/
+            /*C 라면 [3]주소에다가 그냥 memcpy 하면 되는데... Buffer.BlockCopy 가 있네. 잘만들었네 좋다.*/
             Buffer.BlockCopy(data, 0, Sender_Packet, 3, 128);
 
             Crc_byte = crc16.ComputeCrc(data);
@@ -76,5 +84,28 @@ namespace XModem_Project
 
             Console.WriteLine(BitConverter.ToString(Sender_Packet));
         }
+
+        private int Wait_ACK_NAK()
+        {
+			int Console_read;
+
+            while(true)
+            {
+                Console_read = Console.Read();
+			
+                if(Console_read == 0x30) 		//Constants.NAK
+                {
+                    return 0;
+                }
+                else if(Console_read == 0x31) 	//Constants.ACK
+                {
+                    return 1;
+                }
+                else
+                {;}
+            }
+        }
+
+        //private byte 
     }
 }

@@ -1,3 +1,5 @@
+참조 : http://web.mit.edu/6.115/www/amulet/xmodem.htm
+
 *Packet 구조
    1            2            3            4            5
   SOH(1)    PacketNo(1) 255-P.no(1)  DataBlock(128)  CRC(2)
