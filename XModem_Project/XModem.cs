@@ -21,11 +21,13 @@ namespace XModem_Project
 
     class XModem
     {
-        //UInt16 Crc_byte = 0;
+        crc16 Crc_o = new crc16();
 
         byte[] Sender_Packet = new byte[3];
 		byte[] Sender_Data = new byte[1024];
-		UInt16 Sender_Crc = new UInt16();
+		byte[] Sender_Crc = new byte[2];
+		byte[] Sender_EOT = new byte[1];
+		ushort Sender_Crc_us;
 		
 		SerialPort SPort;
 
@@ -36,6 +38,8 @@ namespace XModem_Project
 		 */
         public int init_xmodem(SerialPort Port)
         {
+			Sender_EOT[0] = Constants.EOT;
+			
 			SPort = Port;
 			
 			SPort.Open();
@@ -47,6 +51,8 @@ namespace XModem_Project
 			{
 				return 0;
 			}
+			
+			
         }
 		
 		/************************************************
@@ -55,11 +61,12 @@ namespace XModem_Project
 		public void xmodem_send(BinaryReader B_reader)
 		{
 			int err = 0;
+			string Read_line;
 			Sender_Packet_Number = 1;
 			this.wait_c();
 			
-			Sender_Data = B_reader.ReadBytes(128);
-			err = Send_Packet(Sender_Data, Sender_Packet_Number, 128);
+			Sender_Data = B_reader.ReadBytes(1024);
+			err = Send_Packet(Sender_Data, Sender_Packet_Number, 1024);
 			while(true)
 			{
 				if(err == 1)
@@ -68,7 +75,14 @@ namespace XModem_Project
 					
 					if(Sender_Data.Length == 0)
 					{
-						break;
+						SPort.Write(Sender_EOT, 0, 1);
+						while(true)
+						{
+							Read_line = SPort.ReadLine();
+							Console.Write(Read_line);
+						}
+						
+						//break;
 					}
 					else if(Sender_Data.Length != 1024)
 					{
@@ -129,7 +143,8 @@ namespace XModem_Project
             Sender_Packet[1] = SPN;
 
             /*byte -> int 형변환 때문에 더하기 빼기도 어렵네...*/
-            Sender_Packet[2] = BitConverter.GetBytes(255 - SPN)[0];
+            //Sender_Packet[2] = BitConverter.GetBytes(255 - SPN)[0];
+			Sender_Packet[2] = (byte)(~SPN);
 
 			Console.WriteLine(BitConverter.ToString(Sender_Packet));
 			SPort.Write(Sender_Packet, 0, 3);
@@ -137,9 +152,14 @@ namespace XModem_Project
 			Console.WriteLine(BitConverter.ToString(data));
 			SPort.Write(data, 0, Length);
 
-            Sender_Crc = crc16.ComputeCrc(data);
-			Console.WriteLine(Sender_Crc);
-			SPort.Write(BitConverter.GetBytes(Sender_Crc), 0, 2);
+            //Sender_Crc = crc16.ComputeCrc(data);
+			//Sender_Crc = Crc_o.calcrc(data);
+			Sender_Crc_us = crc16.CRC16_ccitt(data, 0, Length);
+			Sender_Crc[0] = (byte)((Sender_Crc_us >> 8) & 0xFF);
+			Sender_Crc[1] = (byte)(Sender_Crc_us & 0xFF);
+
+			Console.WriteLine(BitConverter.ToString(Sender_Crc));
+			SPort.Write(Sender_Crc, 0, 2);
 			
 			return Wait_ACK_NAK(Length);
         }
