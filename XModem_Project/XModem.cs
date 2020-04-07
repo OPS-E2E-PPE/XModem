@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
+using System.IO.Ports;
 
 namespace XModem_Project
 {
     static class Constants
     {
         public const byte SOH = 0x01;
+		public const byte SOX = 0x02;
         public const byte EOT = 0x01;
         public const byte ETB = 0x01;
 
@@ -18,33 +21,43 @@ namespace XModem_Project
 
     class XModem
     {
-        UInt16 Crc_byte = 0;
+        //UInt16 Crc_byte = 0;
 
-        byte[] Sender_Packet = new byte[133];
+        byte[] Sender_Packet = new byte[3];
+		byte[] Sender_Data = new byte[1024];
+		UInt16 Sender_Crc = new UInt16();
+		
+		SerialPort SPort;
+		FileStream FStream;
 
         byte Sender_Packet_Number = 1;
-        byte[] Sender_Data = new byte[128];
-
-        public void init_xmodem()
+		
+		/*
+		 * 수정 시작 : init 할 때 시리얼 포트 정보를 받는다.
+		 */
+        public int init_xmodem(SerialPort Port)
         {
-			int ACK_NAK = 0;
-            this.wait_c();
-
-			/*test*/
-            for(int i = 0; i < 5; i++)
-            {
-                Send_Packet(Sender_Data, Sender_Packet_Number);
-				ACK_NAK = Wait_ACK_NAK();
-                if(ACK_NAK == 1)
-				{
-					Sender_Data[0]++;
-					Sender_Data[127]++;
-					Sender_Packet_Number++;
-				}
-				else if(ACK_NAK == 0)
-				{;}
-            }
+			SPort = Port;
+			
+			SPort.Open();
+			if(SPort.IsOpen)
+			{
+				return 1;
+			}
+			else
+			{
+				return 0;
+			}
         }
+		
+		/*
+		 * 파일을 받아서 송신하는 것을 전부 관장함.
+		 */
+		public void xmodem_send()
+		{
+			this.wait_c();
+			//Send_Packet();
+		}
 
         /*
          * XModem 시작 문자 대기 'C'
@@ -63,12 +76,13 @@ namespace XModem_Project
             }
         }
 
-        /*
+        /********************************************************
+		 * send 형식 바꿀 때는 이 곳을 변경
          * make packet and send
          */
         private void Send_Packet(byte[] data, byte SPN)
         {
-            Sender_Packet[0] = Constants.SOH;
+            Sender_Packet[0] = Constants.SOX;
 
             /*255 넘으면 알아서 0 되겠지*/
             Sender_Packet[1] = SPN;
@@ -77,12 +91,13 @@ namespace XModem_Project
             Sender_Packet[2] = BitConverter.GetBytes(255 - SPN)[0];
 
             /*C 라면 [3]주소에다가 그냥 memcpy 하면 되는데... Buffer.BlockCopy 가 있네. 잘만들었네 좋다.*/
-            Buffer.BlockCopy(data, 0, Sender_Packet, 3, 128);
-
-            Crc_byte = crc16.ComputeCrc(data);
-            Buffer.BlockCopy(BitConverter.GetBytes(Crc_byte), 0, Sender_Packet, 131, 2);
-
-            Console.WriteLine(BitConverter.ToString(Sender_Packet));
+            //Buffer.BlockCopy(data, 0, Sender_Packet, 3, 128);  //따로 보낼 것임.
+			
+			Console.WriteLine(BitConverter.ToString(Sender_Packet));
+			Console.WriteLine(BitConverter.ToString(data));
+			
+            Sender_Crc = crc16.ComputeCrc(data);
+			Console.WriteLine(Sender_Crc);
         }
 
         private int Wait_ACK_NAK()
