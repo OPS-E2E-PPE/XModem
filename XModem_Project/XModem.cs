@@ -10,13 +10,13 @@ namespace XModem_Project
     {
         public const byte SOH = 0x01;
 		public const byte SOX = 0x02;
-        public const byte EOT = 0x01;
-        public const byte ETB = 0x01;
+        public const byte EOT = 0x04;
+        public const byte ETB = 0x17;
 
-        public const byte ACK = 0x01;
-        public const byte NAK = 0x01;
+        public const byte ACK = 0x06;
+        public const byte NAK = 0x15;
         
-        public const byte CAN = 0x01;
+        public const byte CAN = 0x18;
     }
 
     class XModem
@@ -28,9 +28,8 @@ namespace XModem_Project
 		UInt16 Sender_Crc = new UInt16();
 		
 		SerialPort SPort;
-		FileStream FStream;
 
-        byte Sender_Packet_Number = 1;
+        byte Sender_Packet_Number = 0;
 		
 		/*
 		 * 수정 시작 : init 할 때 시리얼 포트 정보를 받는다.
@@ -50,13 +49,50 @@ namespace XModem_Project
 			}
         }
 		
-		/*
+		/************************************************
 		 * 파일을 받아서 송신하는 것을 전부 관장함.
 		 */
-		public void xmodem_send()
+		public void xmodem_send(BinaryReader B_reader)
 		{
+			int err = 0;
+			Sender_Packet_Number = 1;
 			this.wait_c();
-			//Send_Packet();
+			
+			Sender_Data = B_reader.ReadBytes(128);
+			err = Send_Packet(Sender_Data, Sender_Packet_Number, 128);
+			while(true)
+			{
+				if(err == 1)
+				{
+					Sender_Data = B_reader.ReadBytes(1024);
+					
+					if(Sender_Data.Length == 0)
+					{
+						break;
+					}
+					else if(Sender_Data.Length != 1024)
+					{
+						byte[] full_stream = new byte[1024];
+						byte[] zero_ary = new byte[1024 - Sender_Data.Length];
+						Array.Clear(zero_ary, 0, zero_ary.Length);
+						
+						Console.WriteLine(Sender_Data.Length);
+						
+						Array.Copy(Sender_Data, 0, full_stream, 0, Sender_Data.Length);
+						Array.Copy(zero_ary, 0, full_stream, Sender_Data.Length, zero_ary.Length);
+						
+						Sender_Data = full_stream;
+					}
+					
+					Sender_Packet_Number++;
+					err = Send_Packet(Sender_Data, Sender_Packet_Number, 1024);
+				}
+				else
+				{
+					err = Send_Packet(Sender_Data, Sender_Packet_Number, err);
+				}
+			}
+			
 		}
 
         /*
@@ -67,8 +103,8 @@ namespace XModem_Project
             char readchar;
             while (true)
             {
-                readchar = (char)Console.Read();
-                //Console.WriteLine(readchar);
+                readchar = (char)SPort.ReadChar();
+                Console.WriteLine(readchar);
                 if(readchar == 'C')
                 {
                     break;
@@ -80,44 +116,57 @@ namespace XModem_Project
 		 * send 형식 바꿀 때는 이 곳을 변경
          * make packet and send
          */
-        private void Send_Packet(byte[] data, byte SPN)
+        private int Send_Packet(byte[] data, byte SPN, int Length)
         {
-            Sender_Packet[0] = Constants.SOX;
-
-            /*255 넘으면 알아서 0 되겠지*/
+			if(Length == 128)
+			{
+				Sender_Packet[0] = Constants.SOH;
+			}
+			else if(Length == 1024)
+			{
+				Sender_Packet[0] = Constants.SOX;
+			}
             Sender_Packet[1] = SPN;
 
             /*byte -> int 형변환 때문에 더하기 빼기도 어렵네...*/
             Sender_Packet[2] = BitConverter.GetBytes(255 - SPN)[0];
 
-            /*C 라면 [3]주소에다가 그냥 memcpy 하면 되는데... Buffer.BlockCopy 가 있네. 잘만들었네 좋다.*/
-            //Buffer.BlockCopy(data, 0, Sender_Packet, 3, 128);  //따로 보낼 것임.
-			
 			Console.WriteLine(BitConverter.ToString(Sender_Packet));
-			Console.WriteLine(BitConverter.ToString(data));
+			SPort.Write(Sender_Packet, 0, 3);
 			
+			Console.WriteLine(BitConverter.ToString(data));
+			SPort.Write(data, 0, Length);
+
             Sender_Crc = crc16.ComputeCrc(data);
 			Console.WriteLine(Sender_Crc);
+			SPort.Write(BitConverter.GetBytes(Sender_Crc), 0, 2);
+			
+			return Wait_ACK_NAK(Length);
         }
 
-        private int Wait_ACK_NAK()
+        private int Wait_ACK_NAK(int Length)
         {
-			int Console_read;
+			int SPort_read;
 
             while(true)
             {
-                Console_read = Console.Read();
-			
-                if(Console_read == 0x30) 		//Constants.NAK
+				Console.WriteLine("Wait_ACK_NAK");
+                SPort_read = SPort.ReadChar();//Console.Read();
+
+                if(SPort_read == Constants.NAK) 		//Constants.NAK
                 {
-                    return 0;
+					Console.WriteLine("NAK");
+                    return Length;
                 }
-                else if(Console_read == 0x31) 	//Constants.ACK
+                else if(SPort_read == Constants.ACK) 	//Constants.ACK
                 {
+					Console.WriteLine("ACK");
                     return 1;
                 }
                 else
-                {;}
+                {
+					Console.WriteLine(SPort_read);
+				}
             }
         }
 

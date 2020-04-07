@@ -37,7 +37,7 @@ namespace XModem_Project
 				return;
 			}
 			
-			
+			xModem.xmodem_send(b_reader);
         }
     }
 }
